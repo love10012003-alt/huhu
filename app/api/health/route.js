@@ -1,1 +1,1 @@
-import { NextResponse } from 'next/server'; export async function GET(){ return NextResponse.json({ok:true,domain:'f.lal.vn PREMIUM'}) }
+import { NextResponse } from 'next/server'; export async function GET(){ return NextResponse.json({ok:true,domain:'f.lal.vn AUTO'}) }

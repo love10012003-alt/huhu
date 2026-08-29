@@ -1,1 +1,1 @@
-import './globals.css'; export const metadata={title:'f.lal.vn • CanhDon PREMIUM ĐẲNG CẤP',description:'f.lal.vn premium'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
+import './globals.css'; export const metadata={title:'f.lal.vn AUTO SAVE DATA'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}

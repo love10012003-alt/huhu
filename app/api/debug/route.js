@@ -5,22 +5,22 @@ export const dynamic='force-dynamic'
 export async function GET(){
   const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL
   const skey=process.env.SUPABASE_SECRET_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const rawKeys=(process.env.AVIATIONSTACK_KEY||'').split(',').map(k=>k.trim()).filter(Boolean)
-  let supabaseCheck={ok:false,error:''}
+  const keys=(process.env.AVIATIONSTACK_KEY||'').split(',').map(k=>k.trim()).filter(Boolean)
+  let supabaseCheck={ok:false,error:'',count:0}
   try{
     const supabase=createClient(url,skey)
-    const {error}=await supabase.from('flight_cache').select('iata').limit(1)
+    const {data,error}=await supabase.from('flight_cache').select('iata').limit(10)
     if(error) supabaseCheck.error=error.message
-    else supabaseCheck.ok=true
-  }catch(e){ supabaseCheck.error=e.message }
-  let aviationCheck={ok:false,error:'',count:0,keysTried:rawKeys.length}
-  for(const ak of rawKeys){
+    else { supabaseCheck.ok=true; supabaseCheck.count=data?.length||0 }
+  }catch(e){ supabaseCheck.error=e.message+' - Project co the bi PAUSE, vao supabase.com restore' }
+  let aviationCheck={ok:false,error:'',count:0,keysTried:keys.length}
+  for(const ak of keys){
     try{
       const res=await fetch(`https://api.aviationstack.com/v1/flights?access_key=${ak}&arr_iata=SGN&limit=3`,{cache:'no-store'})
       const j=await res.json()
       if(j.error){ aviationCheck.error=j.error.code+' - '+j.error.message; continue }
-      if(j.data){ aviationCheck.ok=true; aviationCheck.count=j.data.length; aviationCheck.error=''; break }
+      if(j.data){ aviationCheck.ok=true; aviationCheck.count=j.data.length; break }
     }catch(e){ aviationCheck.error=e.message }
   }
-  return NextResponse.json({domain:'f.lal.vn PREMIUM',env:{SUPABASE_URL:!!url,SECRET:!!skey,AVIATION:rawKeys.length},supabase:supabaseCheck,aviation:aviationCheck})
+  return NextResponse.json({domain:'f.lal.vn AUTO SAVE',mechanism:'Cron tu dong 10p/lan -> cao AviationStack + FlightRadar24 free -> luu vao Supabase flight_cache -> khach chi doc DB minh',supabase:supabaseCheck,aviation:aviationCheck,freeDeep:'AviationStack free: flight, airline, departure, arrival, baggage, gate, terminal, aircraft.icao + FlightRadar24 free: lat/lon/alt/speed/registration + Mock chuyen sau free'})
 }
