@@ -1,1 +1,1 @@
-import './globals.css'; export const metadata={title:'f.lal.vn AUTO SAVE DATA'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
+import './globals.css'; export const metadata={title:'f.lal.vn • UI Tối Ưu Nhất'}; export default function RootLayout({children}){return <html><body>{children}</body></html>}
