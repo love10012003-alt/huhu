@@ -9,7 +9,7 @@ function genFallback(){
     const d=new Date(now.getTime()+(10+i*7)*60000)
     flights.push({number:'VJ'+(780+i),origin:['HAN','DAD','VCA'][i%3],scheduled:d.toISOString(),estimated:d.toISOString(),status:'on_time',belt:String((i%4)+1),gate:'B'+((i%6)+1),parking:'Bãi A'})
   }
-  return {iata:'SGN',flights,clusters:[{window:'08:00-12:00',count:25,suggest_depart:new Date().toISOString(),flights}],updated_at:new Date().toISOString(),is_mock:false,source:'FALLBACK_SEAMLESS'}
+  return {iata:'SGN',flights,clusters:[{window:'08:00-12:00',count:25,suggest_depart:new Date().toISOString(),flights}],updated_at:new Date().toISOString(),is_mock:false,source:'FALLBACK_FULL'}
 }
 export async function GET(req){
   const {searchParams}=new URL(req.url)
@@ -19,10 +19,8 @@ export async function GET(req){
   try{
     const supabase=createClient(url,key)
     const {data,error}=await supabase.from('flight_cache').select('*').eq('iata',airport).single()
-    if(error) return NextResponse.json({...genFallback(),error:'Supabase: '+error.message})
+    if(error) return NextResponse.json({...genFallback(),error:error.message})
     if(data?.data) return NextResponse.json(data.data)
     return NextResponse.json(genFallback())
-  }catch(e){
-    return NextResponse.json({...genFallback(),error:e.message})
-  }
+  }catch(e){ return NextResponse.json({...genFallback(),error:e.message}) }
 }

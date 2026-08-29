@@ -1,1 +1,1 @@
-import './globals.css'; export default function RootLayout({children}){return <html><body>{children}</body></html>}
+import './globals.css'; export const metadata={title:'f.lal.vn FULL Key Moi'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
