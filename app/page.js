@@ -1,71 +1,82 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BAO CAO LOI - f.lal.vn</title>
-<style>
-body{font-family:system-ui;background:#09090b;color:white;margin:0;padding:16px}
-.card{background:#151518;border:1px solid #26262a;border-radius:16px;padding:16px;margin:12px 0}
-.ok{color:#22c55e} .err{color:#fb7185;font-weight:900} .warn{color:#facc15}
-pre{background:black;border-radius:12px;padding:12px;overflow:auto;font-size:11px;white-space:pre-wrap;word-break:break-all}
-button{width:100%;padding:14px;border-radius:12px;border:0;font-weight:900;margin-top:8px;cursor:pointer}
-.btn-yellow{background:#facc15;color:black}
-.btn-white{background:white;color:black}
-.btn-dark{background:#1a1a1e;color:white;border:1px solid #333}
-</style>
-</head>
-<body>
-<h1 style="font-weight:900;font-size:20px">KIEM TRA TOAN BO LOI - f.lal.vn</h1>
-<p style="color:#888;font-size:12px">Bam nut duoi, doi 10s, roi copy bao cao gui minh</p>
-<button class="btn-yellow" onclick="runAll()">BAT DAU KIEM TRA TOAN BO</button>
-<div id="results"></div>
-<div class="card">
-  <div style="font-weight:900;font-size:13px">BAO CAO TONG HOP (Copy gui minh)</div>
-  <textarea id="report" style="width:100%;height:400px;background:black;color:#0f0;font-family:monospace;font-size:11px;padding:12px;border-radius:12px;margin-top:8px" readonly placeholder="Bam kiem tra de co bao cao..."></textarea>
-  <button class="btn-white" onclick="copyReport()">COPY TOAN BO BAO CAO</button>
-  <button class="btn-dark" onclick="downloadReport()">TAI FILE BAO CAO .txt</button>
-</div>
-<script>
-let fullReport = '';
-function addResult(html){ document.getElementById('results').innerHTML += html }
-function log(text){ fullReport += text + '\n'; document.getElementById('report').value = fullReport }
-async function runAll(){
-  fullReport = '=== BAO CAO LOI f.lal.vn - ' + new Date().toISOString() + ' ===\n\n';
-  document.getElementById('results').innerHTML = '';
-  log('Bat dau kiem tra...');
-  try{
-    const r = await fetch('/api/debug',{cache:'no-store'});
-    const j = await r.json();
-    log('=== /api/debug ===\n' + JSON.stringify(j,null,2));
-    let html = '<div class=card><b>1. /api/debug</b><br><br>';
-    html += 'SUPABASE_URL: ' + (j.env.SUPABASE_URL ? '<span class=ok>co ✓</span>' : '<span class=err>THIEU ❌</span>') + '<br>';
-    html += 'SECRET: ' + (j.env.SUPABASE_SECRET_KEY ? '<span class=ok>co</span>' : '<span class=err>THIEU</span>') + '<br>';
-    html += 'AVIATION: ' + (j.env.AVIATIONSTACK_KEY ? '<span class=ok>co</span>' : '<span class=err>THIEU</span>') + '<br><br>';
-    html += 'Supabase: ' + (j.supabase.ok ? '<span class=ok>OK</span>' : '<span class=err>LOI ' + j.supabase.error + '</span>') + '<br>';
-    html += 'Bang: ' + (j.supabase.tableExists ? '<span class=ok>co</span>' : '<span class=err>KHONG CO - chay SQL</span>') + '<br>';
-    html += 'Aviation: ' + (j.aviation.ok ? '<span class=ok>OK ' + j.aviation.count + '</span>' : '<span class=err>LOI ' + j.aviation.error + '</span>') + '<br>';
-    html += '<pre>' + JSON.stringify(j,null,2).slice(0,2000) + '</pre></div>';
-    addResult(html);
-  }catch(e){ log('Loi debug: '+e.message); addResult('<div class=card><span class=err>debug loi: '+e.message+'</span></div>'); }
-  try{
-    const r = await fetch('/api/cron',{cache:'no-store'});
-    const j = await r.json();
-    log('\n=== /api/cron ===\n' + JSON.stringify(j,null,2));
-    let html = '<div class=card><b>2. /api/cron</b><br>';
-    html += (j.ok ? '<span class=ok>OK '+j.count+'</span>' : '<span class=err>LOI '+j.error+'</span>') + '<pre>' + JSON.stringify(j,null,2).slice(0,2000) + '</pre></div>';
-    addResult(html);
-  }catch(e){ log('Loi cron: '+e.message); }
-  try{
-    const r = await fetch('/api/flights?airport=SGN',{cache:'no-store'});
-    const j = await r.json();
-    log('\n=== /api/flights ===\n' + JSON.stringify(j,null,2));
-    addResult('<div class=card><b>3. /api/flights</b><br>flights: '+(j.flights?.length||0)+'<br>error: '+(j.error||'khong')+'<pre>'+JSON.stringify(j,null,2).slice(0,2000)+'</pre></div>');
-  }catch(e){ log('Loi flights: '+e.message); }
-  log('\n=== KET THUC ===');
+
+'use client'
+import { useState } from 'react'
+export default function Home(){
+  const [report,setReport]=useState('Bấm nút để kiểm tra...')
+  const [results,setResults]=useState(null)
+  const [loading,setLoading]=useState(false)
+  
+  const runAll=async()=>{
+    setLoading(true)
+    let full='=== BAO CAO LOI f.lal.vn - '+new Date().toISOString()+' ===\n\n'
+    let res={}
+    try{
+      const r=await fetch('/api/debug',{cache:'no-store'})
+      const j=await r.json()
+      res.debug=j
+      full+='=== /api/debug ===\n'+JSON.stringify(j,null,2)+'\n\n'
+    }catch(e){ full+='Loi debug: '+e.message+'\n' }
+    try{
+      const r=await fetch('/api/cron',{cache:'no-store'})
+      const j=await r.json()
+      res.cron=j
+      full+='=== /api/cron ===\n'+JSON.stringify(j,null,2)+'\n\n'
+    }catch(e){ full+='Loi cron: '+e.message+'\n' }
+    try{
+      const r=await fetch('/api/flights?airport=SGN',{cache:'no-store'})
+      const j=await r.json()
+      res.flights=j
+      full+='=== /api/flights ===\n'+JSON.stringify(j,null,2)+'\n'
+    }catch(e){ full+='Loi flights: '+e.message }
+    setReport(full)
+    setResults(res)
+    setLoading(false)
+  }
+  
+  const copyReport=()=>{
+    navigator.clipboard.writeText(report)
+    alert('Đã copy báo cáo! Dán gửi mình nhé!')
+  }
+  
+  return (
+    <div style={{maxWidth:480,margin:'0 auto',background:'#0f0f10',minHeight:'100vh',padding:16,color:'white'}}>
+      <h1 style={{fontWeight:900}}>🔍 f.lal.vn - KIEM TRA LOI</h1>
+      <p style={{fontSize:12,color:'#888'}}>Domain chính: f.lal.vn - Bấm nút dưới để kiểm tra toàn bộ</p>
+      
+      <button onClick={runAll} disabled={loading} style={{width:'100%',padding:14,borderRadius:12,background:'#facc15',color:'black',fontWeight:900,marginTop:12}}>
+        {loading?'Đang kiểm tra...':'🚀 BẮT ĐẦU KIỂM TRA TOÀN BỘ'}
+      </button>
+      
+      {results && (
+        <div style={{marginTop:12}}>
+          <div style={{padding:12,borderRadius:12,background:'#151518',border:'1px solid #333'}}>
+            <div style={{fontSize:12,fontWeight:700}}>Kết quả kiểm tra:</div>
+            <div style={{fontSize:11,marginTop:8}}>
+              <div>SUPABASE_URL: {results.debug?.env?.SUPABASE_URL ? '✅ có' : '❌ THIẾU'}</div>
+              <div>SECRET: {results.debug?.env?.SECRET ? '✅ có' : '❌ THIẾU'}</div>
+              <div>AVIATION: {results.debug?.env?.AVIATION ? '✅ có' : '❌ THIẾU'}</div>
+              <div>Bảng flight_cache: {results.debug?.supabase?.tableExists ? '✅ có' : '❌ KHÔNG CÓ'}</div>
+              <div>Supabase OK: {results.debug?.supabase?.ok ? '✅' : '❌ '+results.debug?.supabase?.error}</div>
+              <div>Aviation OK: {results.debug?.aviation?.ok ? '✅ '+results.debug?.aviation?.count+' chuyến' : '❌ '+results.debug?.aviation?.error}</div>
+              <div>Cron: {results.cron?.ok ? '✅ '+results.cron?.count+' chuyến' : '❌ '+results.cron?.error}</div>
+              <div>Flights: {results.flights?.flights?.length||0} chuyến - is_mock: {String(results.flights?.is_mock)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div style={{marginTop:12}}>
+        <div style={{fontSize:12,fontWeight:700}}>📋 Báo cáo chi tiết (copy gửi mình):</div>
+        <textarea value={report} readOnly style={{width:'100%',height:350,marginTop:8,padding:12,borderRadius:12,background:'black',color:'#0f0',fontFamily:'monospace',fontSize:11}} />
+        <button onClick={copyReport} style={{width:'100%',padding:12,borderRadius:12,background:'white',color:'black',fontWeight:900,marginTop:8}}>📋 COPY BÁO CÁO GỬI MÌNH</button>
+      </div>
+      
+      <div style={{marginTop:12,padding:12,borderRadius:12,background:'#1a1a1e',fontSize:11,color:'#aaa'}}>
+        <div>Debug links:</div>
+        <div><a href="/api/debug" target="_blank" style={{color:'#facc15'}}>/api/debug</a> - Kiểm tra hệ thống</div>
+        <div><a href="/api/cron" target="_blank" style={{color:'#facc15'}}>/api/cron</a> - Nạp REAL</div>
+        <div><a href="/api/flights?airport=SGN" target="_blank" style={{color:'#facc15'}}>/api/flights?airport=SGN</a></div>
+      </div>
+    </div>
+  )
 }
-function copyReport(){ document.getElementById('report').select(); document.execCommand('copy'); alert('Da copy! Dan vao chat cho minh nhe!'); }
-function downloadReport(){ const blob = new Blob([fullReport], {type:'text/plain'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='bao-cao-loi-'+Date.now()+'.txt'; a.click(); }
-</script>
-</body>
-</html>

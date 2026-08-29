@@ -1,5 +1,5 @@
 {
-  "name": "f-lal-vn-final",
+  "name": "f.lal.vn-fix",
   "private": true,
   "scripts": {
     "dev": "next dev",
