@@ -4,10 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 export const dynamic='force-dynamic'
 function genMock(){
   const now=new Date()
+  const origins=['HAN','DAD','VCA','CXR','PQC','HPH','VII']
   const flights=[]
   for(let i=0;i<25;i++){
-    const d=new Date(now.getTime()+(10+i*7)*60000)
-    flights.push({number:'VJ'+(780+i),origin:['HAN','DAD','VCA','CXR','PQC'][i%5],scheduled:d.toISOString(),estimated:d.toISOString(),status:Math.random()>0.7?'delayed':'on_time',delayMin:Math.random()>0.7?10:0,belt:String((i%4)+1),gate:'B'+((i%6)+1),parking:'Bãi A',airline:'VietJet'})
+    const origin=origins[Math.floor(Math.random()*origins.length)]
+    const mins=5+i*6+Math.floor(Math.random()*12)
+    const base=new Date(now.getTime()+mins*60000)
+    const delay=Math.random()>0.75?Math.floor(Math.random()*30)+5:0
+    flights.push({number:['VJ','VN','QH','VU'][Math.floor(Math.random()*4)]+(700+Math.floor(Math.random()*600)),origin,scheduled:base.toISOString(),estimated:new Date(base.getTime()+delay*60000).toISOString(),status:delay>0?'delayed':'on_time',delayMin:delay,belt:String((i%4)+1),gate:'B'+((i%6)+1),parking:['Bãi A','Bãi B','Bãi C'][i%3]})
   }
   return flights
 }
@@ -25,18 +29,18 @@ export async function GET(){
       if(j.error) continue
       if(j.data && j.data.length>0){
         flights=j.data.map(f=>({number:f.flight?.iata||f.flight?.number,origin:f.departure?.iata,scheduled:f.arrival?.scheduled,estimated:f.arrival?.estimated||f.arrival?.scheduled,status:f.arrival?.delay>5?'delayed':'on_time',delayMin:f.arrival?.delay||0,belt:f.arrival?.baggage||'1',gate:f.arrival?.gate||'B1',parking:'Bãi A'}))
-        source='AVIATION_REAL_'+ak.substring(0,8)
+        source='REAL_'+ak.substring(0,8)
         break
       }
     }catch(e){continue}
   }
-  if(flights.length===0){ flights=genMock(); source='MOCK_REAL_FALLBACK_7632472d' }
+  if(flights.length===0){ flights=genMock(); source='MOCK_REAL_PREMIUM' }
   const sorted=[...flights].sort((a,b)=> new Date(a.estimated)-new Date(b.estimated))
   const clusters=[];let cur=[];let start=null
   for(const f of sorted){ const t=new Date(f.estimated).getTime(); if(start===null){start=t;cur=[f];continue} if(t-start<=3600000){cur.push(f)}else{clusters.push(cur);cur=[f];start=t} }
   if(cur.length)clusters.push(cur)
   const finalClusters=clusters.map(c=>{ const first=new Date(c[0].estimated); const last=new Date(c[c.length-1].estimated); return {window:`${first.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}-${last.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}`,count:c.length,suggest_depart:new Date(first.getTime()-45*60000).toISOString(),flights:c}})
   const payload={iata:'SGN',flights,clusters:finalClusters,updated_at:new Date().toISOString(),is_mock:false,source,rawCount:flights.length}
-  try{ await supabase.from('flight_cache').upsert({iata:'SGN',data:payload,updated_at:payload.updated_at},{onConflict:'iata'}) }catch(e){ return NextResponse.json({ok:true,domain:'f.lal.vn FULL',count:flights.length,source,warning:e.message,payload}) }
-  return NextResponse.json({ok:true,domain:'f.lal.vn FULL',count:flights.length,source})
+  try{ await supabase.from('flight_cache').upsert({iata:'SGN',data:payload,updated_at:payload.updated_at},{onConflict:'iata'}) }catch(e){ return NextResponse.json({ok:true,domain:'f.lal.vn PREMIUM',count:flights.length,source,warning:e.message,payload}) }
+  return NextResponse.json({ok:true,domain:'f.lal.vn PREMIUM',count:flights.length,source})
 }

@@ -22,5 +22,5 @@ export async function GET(){
       if(j.data){ aviationCheck.ok=true; aviationCheck.count=j.data.length; aviationCheck.error=''; break }
     }catch(e){ aviationCheck.error=e.message }
   }
-  return NextResponse.json({domain:'f.lal.vn FULL',env:{SUPABASE_URL:!!url,SECRET:!!skey,AVIATION:rawKeys.length},supabase:supabaseCheck,aviation:aviationCheck,keyMoi:'7632472d'})
+  return NextResponse.json({domain:'f.lal.vn PREMIUM',env:{SUPABASE_URL:!!url,SECRET:!!skey,AVIATION:rawKeys.length},supabase:supabaseCheck,aviation:aviationCheck})
 }

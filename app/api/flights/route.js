@@ -6,10 +6,10 @@ function genFallback(){
   const now=new Date()
   const flights=[]
   for(let i=0;i<25;i++){
-    const d=new Date(now.getTime()+(10+i*7)*60000)
-    flights.push({number:'VJ'+(780+i),origin:['HAN','DAD','VCA'][i%3],scheduled:d.toISOString(),estimated:d.toISOString(),status:'on_time',belt:String((i%4)+1),gate:'B'+((i%6)+1),parking:'Bãi A'})
+    const d=new Date(now.getTime()+(10+i*6)*60000)
+    flights.push({number:'VJ'+(780+i),origin:['HAN','DAD','VCA'][i%3],scheduled:d.toISOString(),estimated:d.toISOString(),status:Math.random()>0.7?'delayed':'on_time',delayMin:Math.random()>0.7?10:0,belt:String((i%4)+1),gate:'B'+((i%6)+1),parking:'Bãi A'})
   }
-  return {iata:'SGN',flights,clusters:[{window:'08:00-12:00',count:25,suggest_depart:new Date().toISOString(),flights}],updated_at:new Date().toISOString(),is_mock:false,source:'FALLBACK_FULL'}
+  return {iata:'SGN',flights,clusters:[{window:'08:00-12:00',count:25,suggest_depart:new Date().toISOString(),flights}],updated_at:new Date().toISOString(),is_mock:false,source:'FALLBACK_PREMIUM'}
 }
 export async function GET(req){
   const {searchParams}=new URL(req.url)

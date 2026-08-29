@@ -1,1 +1,1 @@
-module.exports = { content:['./app/**/*.{js,jsx}'], theme:{extend:{colors:{gold:'#facc15'}}}, plugins:[] }
+module.exports = { content:['./app/**/*.{js,jsx}'], theme:{extend:{animation:{pulse2:'pulse 2s infinite'}}}, plugins:[] }
