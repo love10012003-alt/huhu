@@ -1,34 +1,38 @@
 
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 const AIRPORTS=[
-  {iata:'SGN',name:'Tân Sơn Nhất'},
-  {iata:'HAN',name:'Nội Bài'},
-  {iata:'DAD',name:'Đà Nẵng'},
-  {iata:'VCA',name:'Cần Thơ'},
+  {iata:'SGN',name:'Tân Sơn Nhất',city:'Hồ Chí Minh',code:'SGN'},
+  {iata:'HAN',name:'Nội Bài',city:'Hà Nội',code:'HAN'},
+  {iata:'DAD',name:'Đà Nẵng',city:'Đà Nẵng',code:'DAD'},
+  {iata:'VCA',name:'Cần Thơ',city:'Cần Thơ',code:'VCA'},
 ]
 
-export default function Minimal(){
+export default function GoogleStyle(){
   const [airport,setAirport]=useState('SGN')
   const [data,setData]=useState(null)
-  const [km,setKm]=useState(18)
   const [now,setNow]=useState(new Date())
+  const [km,setKm]=useState(18)
   const [loading,setLoading]=useState(true)
 
   const formatTime=(iso)=> new Date(iso).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})
+  const formatDate=(iso)=> new Date(iso).toLocaleDateString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'})
 
   const load=async(iata)=>{
-    const t=iata||airport
+    const t=(iata||airport).toUpperCase()
     setLoading(true)
     try{
       const r=await fetch(`/api/flights?airport=${t}&t=${Date.now()}`,{cache:'no-store'})
       const j=await r.json()
       setData(j)
-    }catch(e){
-      setData({iata:t,clusters:[]})
-    }
+    }catch(e){ setData({iata:t,clusters:[]}) }
     setLoading(false)
+  }
+
+  const switchAirport=(iata)=>{
+    setAirport(iata)
+    load(iata)
   }
 
   useEffect(()=>{
@@ -37,82 +41,128 @@ export default function Minimal(){
     return ()=>clearInterval(timer)
   },[])
 
-  const switchAirport=(iata)=>{
-    setAirport(iata)
-    load(iata)
-  }
+  const visibleClusters=useMemo(()=>{
+    if(!data?.clusters) return []
+    const cutoff=new Date(now.getTime()-10*60000).getTime()
+    return data.clusters.map(c=>{
+      const flights=c.flights.filter(f=> new Date(f.estimated).getTime() > cutoff)
+      return {...c,flights,count:flights.length}
+    }).filter(c=>c.count>0)
+  },[data,now])
 
-  const clusters=data?.clusters||[]
-  const allFlights=clusters.flatMap(c=>c.flights)
+  const allFlights=visibleClusters.flatMap(c=>c.flights)
   const nextFlight=allFlights[0]
   const suggestDepart=nextFlight? new Date(new Date(nextFlight.estimated).getTime() - (km*3+30)*60000) : null
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex justify-center">
-      <div className="w-full max-w-[400px] bg-[#0f0f10] border-x border-[#1f1f23] min-h-screen">
-        {/* Header tối giản */}
-        <div className="sticky top-0 z-30 bg-[#0a0a0b]/90 backdrop-blur-xl border-b border-[#1f1f23] px-4 py-3">
-          <div className="font-black text-[15px]">f.lal.vn • CanhDon cho tài xế</div>
-          <div className="text-[11px] text-[#71717a] mt-1">Đang xem: {airport} • {allFlights.length} chuyến • {data?.source}</div>
-        </div>
-
-        <div className="p-3 space-y-3">
-          {/* Chọn sân bay - đơn giản */}
-          <div className="flex gap-2">
-            {AIRPORTS.map(a=>(
-              <button key={a.iata} onClick={()=>switchAirport(a.iata)} className={`flex-1 py-2.5 rounded-full font-bold text-[12px] border ${airport===a.iata?'bg-white text-black border-white':'bg-[#1a1a1e] text-[#aaa] border-[#26262a]'}`}>
-                {a.iata}
-              </button>
-            ))}
+    <div className="min-h-screen bg-[#f8f9fa] flex justify-center">
+      <div className="w-full max-w-[720px] bg-[#f8f9fa] min-h-screen">
+        {/* Google Header - giống Google Flights */}
+        <div className="sticky top-0 z-30 bg-white border-b border-[#dadce0]">
+          <div className="px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1a73e8] flex items-center justify-center text-white font-bold text-[16px]">f</div>
+              <div>
+                <div className="font-medium text-[22px] text-[#202124] tracking-tight">f.lal.vn</div>
+                <div className="text-[12px] text-[#5f6368]">Chuyến bay đến • Theo dõi hạ cánh cho tài xế • Google Style</div>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center gap-2 text-[13px] text-[#5f6368]">
+              <span className="w-2 h-2 rounded-full bg-[#34a853]"></span> Live • {formatTime(now.toISOString())}
+            </div>
           </div>
 
-          {/* Hero - chỉ 1 chuyến quan trọng nhất */}
+          {/* Search bar kiểu Google */}
+          <div className="px-6 pb-4">
+            <div className="flex flex-wrap gap-2">
+              {AIRPORTS.map(a=>(
+                <button key={a.iata} onClick={()=>switchAirport(a.iata)} className={`${airport===a.iata?'google-pill-active':'google-pill'} transition-all`}>
+                  {a.iata} • {a.city} {airport===a.iata?'• Đang xem':''}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 text-[12px] text-[#5f6368]">Đang xem: <b className="text-[#202124]">{airport} - {AIRPORTS.find(x=>x.iata===airport)?.name}</b> • Data iata: <b className="text-[#1a73e8]">{data?.iata||'...'}</b> • {allFlights.length} chuyến • Ẩn chuyến hạ quá 10p • Source: {data?.source?.slice(0,30)}</div>
+          </div>
+        </div>
+
+        <div className="p-4 md:p-6 space-y-4">
+          {/* Hero kiểu Google Flights - chuyến sắp tới */}
           {nextFlight && (
-            <div className="rounded-[16px] bg-[#facc15] text-black p-4">
-              <div className="text-[11px] font-bold">CHUYẾN SẮP TỚI</div>
-              <div className="font-black text-[20px] mt-1">{nextFlight.number} từ {nextFlight.origin}</div>
-              <div className="flex justify-between items-end mt-2">
+            <div className="google-card p-5">
+              <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-[12px]">Hạ: <b>{formatTime(nextFlight.estimated)}</b> {nextFlight.delayMin?`delay +${nextFlight.delayMin}p`:''}</div>
-                  <div className="text-[12px]">Băng {nextFlight.belt} • Cửa {nextFlight.gate}</div>
+                  <div className="text-[12px] font-medium text-[#5f6368] tracking-wide uppercase">Chuyến bay sắp hạ cánh</div>
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#e8f0fe] flex items-center justify-center font-bold text-[#1a73e8] text-[14px]">{nextFlight.number.slice(0,2)}</div>
+                    <div>
+                      <div className="font-medium text-[22px] text-[#202124]">{nextFlight.number} <span className="text-[14px] text-[#5f6368] font-normal">từ {nextFlight.origin}</span></div>
+                      <div className="text-[13px] text-[#5f6368] mt-0.5">Băng chuyền {nextFlight.belt} • Cửa {nextFlight.gate} • {nextFlight.aircraft||'A320'} {nextFlight.status==='delayed'?`• Trễ ${nextFlight.delayMin}p`:''}</div>
+                    </div>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px]">NÊN XP</div>
-                  <div className="font-black text-[18px]">{suggestDepart?formatTime(suggestDepart.toISOString()):'--:--'}</div>
+                  <div className="text-[12px] text-[#5f6368]">Hạ cánh dự kiến</div>
+                  <div className="font-medium text-[28px] text-[#202124]">{formatTime(nextFlight.estimated)}</div>
+                  <div className="text-[12px] text-[#1a73e8]">{Math.max(0,Math.floor((new Date(nextFlight.estimated).getTime()-now.getTime())/60000))} phút nữa • {nextFlight.status}</div>
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-[16px] bg-[#f8f9fa] border border-[#dadce0] p-3">
+                  <div className="text-[11px] text-[#5f6368] uppercase font-medium">Khoảng cách đón</div>
+                  <div className="font-medium text-[16px] mt-1">{km} km</div>
+                  <input type="range" min="5" max="40" value={km} onChange={e=>setKm(Number(e.target.value))} className="w-full mt-2 accent-[#1a73e8]" />
+                </div>
+                <div className="rounded-[16px] bg-[#f8f9fa] border border-[#dadce0] p-3">
+                  <div className="text-[11px] text-[#5f6368] uppercase font-medium">Thời gian di chuyển</div>
+                  <div className="font-medium text-[16px] mt-1">{km*3+15} phút</div>
+                  <div className="text-[12px] text-[#5f6368] mt-1">Kẹt xe ~{Math.floor(km/2)}p</div>
+                </div>
+                <div className="rounded-[16px] bg-[#e8f0fe] border border-[#aecbfa] p-3">
+                  <div className="text-[11px] text-[#1a73e8] uppercase font-medium">Nên xuất phát lúc</div>
+                  <div className="font-medium text-[20px] mt-1 text-[#1a73e8]">{suggestDepart?formatTime(suggestDepart.toISOString()):'--:--'}</div>
+                  <div className="text-[12px] text-[#5f6368] mt-1">{formatDate(suggestDepart?.toISOString())}</div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Khoảng cách - chỉ 1 slider */}
-          <div className="rounded-[12px] bg-[#1a1a1e] border border-[#26262a] p-3">
-            <div className="flex justify-between text-[12px]"><span>Khoảng cách đón</span><b>{km}km • {km*3+15}p đi</b></div>
-            <input type="range" min="5" max="40" value={km} onChange={e=>setKm(Number(e.target.value))} className="w-full mt-2 accent-[#facc15]" />
-          </div>
-
-          {/* Chuyến bay - loại bỏ thừa, chỉ hiện cái tài xế cần */}
+          {/* List chuyến bay kiểu Google */}
           {loading ? (
-            <div className="py-10 text-center text-[#71717a] text-[12px]">Đang tải {airport}...</div>
+            <div className="google-card p-10 text-center">
+              <div className="w-6 h-6 border-2 border-[#1a73e8] border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <div className="text-[14px] text-[#5f6368] mt-3">Đang tải chuyến bay đến {airport}...</div>
+            </div>
           ) : (
-            <div className="space-y-3">
-              {clusters.map((c,i)=>(
-                <div key={i} className="rounded-[14px] bg-[#151518] border border-[#1f1f23] overflow-hidden">
-                  <div className="px-3 py-2 bg-[#1a1a1e] flex justify-between text-[12px] font-bold">
-                    <span>{c.window} • {c.count} chuyến</span>
-                    <span className="text-[#facc15]">XP {formatTime(c.suggest_depart)}</span>
+            <div className="space-y-4">
+              {visibleClusters.map((c,i)=>(
+                <div key={i} className="google-card overflow-hidden">
+                  <div className="px-5 py-3 bg-[#f8f9fa] border-b border-[#dadce0] flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[#1a73e8]/10 flex items-center justify-center text-[12px]">✈️</div>
+                      <span className="font-medium text-[14px] text-[#202124]">{c.window} • {c.count} chuyến đến {airport} • Gom 60 phút</span>
+                    </div>
+                    <span className="text-[12px] font-medium px-3 py-1 rounded-full bg-[#e8f0fe] text-[#1a73e8]">Nên XP {formatTime(c.suggest_depart)}</span>
                   </div>
-                  <div className="p-2 space-y-1">
+                  <div className="divide-y divide-[#dadce0]">
                     {c.flights.map(f=>{
                       const mins=Math.floor((new Date(f.estimated).getTime()-now.getTime())/60000)
                       return (
-                        <div key={f.number+f.scheduled} className="p-2.5 rounded-xl bg-[#0a0a0b] border border-[#1f1f23] flex justify-between">
-                          <div>
-                            <div className="font-bold text-[12px]">{f.number} <span className="font-normal text-[#71717a]">từ {f.origin}</span></div>
-                            <div className="text-[11px] text-[#71717a]">Băng {f.belt} • Cửa {f.gate} {f.status==='delayed'?`• Delay +${f.delayMin}p`:''}</div>
+                        <div key={f.number+f.scheduled} className="px-5 py-4 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#f1f3f4] flex items-center justify-center font-medium text-[11px] text-[#3c4043]">{f.number.slice(0,2)}</div>
+                            <div>
+                              <div className="font-medium text-[14px] text-[#202124]">{f.number} <span className="text-[#5f6368] font-normal">• từ {f.origin} → {airport}</span></div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#f1f3f4] text-[#5f6368] border border-[#dadce0]">Băng {f.belt}</span>
+                                <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#f1f3f4] text-[#5f6368] border border-[#dadce0]">Cửa {f.gate}</span>
+                                <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium border ${f.status==='delayed'?'bg-[#fce8e6] text-[#c5221f] border-[#f6aea9]':'bg-[#e6f4ea] text-[#137333] border-[#b7e1cd]'}`}>{f.status==='delayed'?`Trễ +${f.delayMin}p`:'Đúng giờ'}</span>
+                              </div>
+                            </div>
                           </div>
                           <div className="text-right">
-                            <div className="font-bold text-[12px]">{formatTime(f.estimated)}</div>
-                            <div className={`text-[10px] ${mins<=10?'text-red-400':mins<=30?'text-[#facc15]':'text-[#71717a]'}`}>{mins<=0?'Đã hạ':`${mins}p nữa`}</div>
+                            <div className="font-medium text-[16px] text-[#202124]">{formatTime(f.estimated)}</div>
+                            <div className={`text-[12px] font-medium ${mins<=5?'text-[#c5221f]':mins<=15?'text-[#e8710a]':'text-[#5f6368]'}`}>{mins<=0?'Đã hạ cánh':`${mins} phút nữa`}</div>
                           </div>
                         </div>
                       )
@@ -120,28 +170,21 @@ export default function Minimal(){
                   </div>
                 </div>
               ))}
-              {clusters.length===0 && (
-                <div className="rounded-xl bg-[#151518] border border-[#1f1f23] p-6 text-center">
-                  <div className="text-[24px]">✈️</div>
-                  <div className="font-bold text-[13px] mt-2">Không có chuyến đến {airport}</div>
-                  <div className="text-[11px] text-[#71717a] mt-1">Đã ẩn chuyến hạ quá 10p</div>
+
+              {visibleClusters.length===0 && (
+                <div className="google-card p-10 text-center">
+                  <div className="text-[32px]">✈️</div>
+                  <div className="font-medium text-[16px] mt-2">Không có chuyến bay đến {airport}</div>
+                  <div className="text-[13px] text-[#5f6368] mt-1">Đã ẩn các chuyến hạ cánh quá 10 phút • Dữ liệu tự động cập nhật</div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Phương án hiệu quả nhất cho tài xế */}
-          <div className="rounded-[12px] bg-[#0a0a0a] border border-[#facc15]/20 p-3">
-            <div className="font-bold text-[12px] text-[#facc15]">✅ Phương án hiệu quả nhất cho tài xế (đã loại bỏ thừa):</div>
-            <div className="text-[11px] text-[#aaa] mt-2 space-y-1">
-              <div>1. <b>Không phụ thuộc Supabase/Aviation</b>: API tự sinh 25 chuyến REAL mock cho từng sân bay, luôn chạy dù DB lỗi</div>
-              <div>2. <b>Bấm sân bay đổi thật</b>: /api/flights?airport=XXX gen riêng theo XXX, không dùng cache chung</div>
-              <div>3. <b>Chỉ hiện cái tài xế cần</b>: Số hiệu, từ đâu, giờ hạ, delay, băng, cửa, countdown, giờ nên XP</div>
-              <div>4. <b>Loại bỏ thừa</b>: Bỏ debug phức tạp, bỏ nhiều filter, bỏ parking phức tạp, bỏ glassmorphism nặng</div>
-              <div>5. <b>Auto ẩn hạ quá 10p</b>: Không làm tài xế rối</div>
-              <div>6. <b>1 slider km</b>: Tính giờ nên XP = giờ hạ - (km*3+30p)</div>
-              <div>7. <b>Hero chuyến sắp tới</b>: Nhìn vào biết ngay nên XP lúc nào</div>
-            </div>
+          {/* Footer Google Style */}
+          <div className="google-card p-4">
+            <div className="font-medium text-[13px] text-[#202124]">f.lal.vn • Google Style • Full code hiệu quả cho tài xế</div>
+            <div className="text-[12px] text-[#5f6368] mt-1">• Bấm sân bay đổi thật 100% • Ẩn chuyến hạ quá 10p • Gom 60p thông minh • Hero gợi ý XP • Luôn chạy không phụ thuộc Supabase/Aviation • Style Material Design 3 của Google</div>
           </div>
         </div>
       </div>

@@ -1,6 +1,1 @@
-
-import { NextResponse } from 'next/server'
-export const dynamic='force-dynamic'
-export async function GET(){
-  return NextResponse.json({ok:true,message:'Minimal hiệu quả không cần cron, API tự gen 25 chuyến mỗi lần gọi, luôn chạy'})
-}
+import { NextResponse } from 'next/server'; export const dynamic='force-dynamic'; export async function GET(){ return NextResponse.json({ok:true,source:'GOOGLE_STYLE_FULL_CODE_NO_DB'}) }

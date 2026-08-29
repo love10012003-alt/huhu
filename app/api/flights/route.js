@@ -1,23 +1,20 @@
 
 import { NextResponse } from 'next/server'
 export const dynamic='force-dynamic'
-// MINIMAL HIỆU QUẢ: Không phụ thuộc Supabase, luôn gen 25 chuyến riêng theo từng sân bay, bấm là đổi thật
 function genForAirport(iata){
   const map={
-    SGN:['HAN','DAD','VCA','CXR','PQC'],
-    HAN:['SGN','DAD','VCA'],
-    DAD:['SGN','HAN','CXR'],
+    SGN:['HAN','DAD','VCA','CXR','PQC','HPH'],
+    HAN:['SGN','DAD','VCA','CXR'],
+    DAD:['SGN','HAN','CXR','PQC'],
     VCA:['SGN','HAN'],
-    CXR:['SGN','HAN'],
-    PQC:['SGN','HAN']
   }
   const origins=map[iata]||['HAN','DAD']
   const now=new Date()
   const flights=[]
   for(let i=0;i<25;i++){
     const origin=origins[i % origins.length]
-    const base=new Date(now.getTime()+(5+i*7)*60000+Math.floor(Math.random()*10)*60000)
-    const delay=Math.random()>0.7?Math.floor(Math.random()*25)+5:0
+    const base=new Date(now.getTime()+(5+i*7)*60000+Math.floor(Math.random()*8)*60000)
+    const delay=Math.random()>0.7?Math.floor(Math.random()*20)+5:0
     const est=new Date(base.getTime()+delay*60000)
     flights.push({
       number:`VJ${780+i}`,
@@ -28,14 +25,12 @@ function genForAirport(iata){
       delayMin:delay,
       belt:String((i%4)+1),
       gate:`B${(i%6)+1}`,
-      parking:'Bãi A'
+      aircraft:['A320','A321','B787'][i%3]
     })
   }
   const sorted=[...flights].sort((a,b)=> new Date(a.estimated)-new Date(b.estimated))
-  // Ẩn chuyến hạ quá 10p ngay từ API
   const cutoff=new Date(now.getTime()-10*60000).getTime()
   const filtered=sorted.filter(f=> new Date(f.estimated).getTime() > cutoff)
-  // Gom 60p
   const clusters=[]
   let cur=[]
   let start=null
@@ -60,14 +55,13 @@ function genForAirport(iata){
     flights:filtered,
     clusters:finalClusters,
     updated_at:new Date().toISOString(),
-    source:`MINIMAL_${iata}_25CHUYEN_${filtered.length}CON_LAI_SAU_AN_10P`,
+    source:`GOOGLE_STYLE_${iata}_FULL_CODE`,
     rawCount:25
   }
 }
 export async function GET(req){
   const {searchParams}=new URL(req.url)
   const airport=(searchParams.get('airport')||'SGN').toUpperCase()
-  // LUÔN GEN RIÊNG THEO TỪNG SÂN BAY, BẤM LÀ ĐỔI THẬT, KHÔNG PHỤ THUỘC DB
   const data=genForAirport(airport)
   return NextResponse.json(data)
 }

@@ -1,1 +1,1 @@
-import './globals.css'; export const metadata={title:'f.lal.vn • Minimal Hiệu Quả'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
+import './globals.css'; export const metadata={title:'f.lal.vn • Google Style Full Code'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
