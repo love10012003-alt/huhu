@@ -1,5 +1,5 @@
 {
-  "name": "f.lal.vn-modular-auth",
+  "name": "f.lal.vn-detailed-flightradar",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,1 +1,5 @@
-@tailwind base;@tailwind components;@tailwind utilities;body{background:#f8f9fa;color:#202124;font-family:Google Sans,Roboto,Arial}
+
+@tailwind base;@tailwind components;@tailwind utilities;
+body{background:#0a0a0a;color:#fff;font-family:system-ui}
+.flightradar-card{background:#1a1a1a;border-top:4px solid #facc15}
+.map-bg{background:linear-gradient(135deg,#d4e8c2 0%,#a8d5a2 50%,#8bc4a8 100%)}
