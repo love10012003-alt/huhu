@@ -1,1 +1,1 @@
-module.exports = { content:['./app/**/*.{js,jsx}'], theme:{extend:{fontFamily:{google:['Google Sans','Roboto','Arial','sans-serif']}}}, plugins:[] }
+module.exports = { content:['./app/**/*.{js,jsx}'], theme:{extend:{}}, plugins:[] }

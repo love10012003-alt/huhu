@@ -1,7 +1,1 @@
-
-@tailwind base;@tailwind components;@tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap');
-body{background:#f8f9fa;color:#202124;font-family:'Google Sans','Roboto',Arial,sans-serif}
-.google-card{background:#fff;border:1px solid #dadce0;border-radius:24px;box-shadow:0 1px 2px 0 rgba(60,64,67,0.3),0 1px 3px 1px rgba(60,64,67,0.15)}
-.google-pill{border-radius:24px;border:1px solid #dadce0;padding:8px 16px;font-weight:500;font-size:14px;background:#fff;color:#3c4043}
-.google-pill-active{background:#1a73e8;color:white;border-color:#1a73e8;box-shadow:0 1px 2px 0 rgba(60,64,67,0.3)}
+@tailwind base;@tailwind components;@tailwind utilities;body{background:#f8f9fa;color:#202124;font-family:Google Sans,Roboto,Arial}

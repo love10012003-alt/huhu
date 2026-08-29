@@ -1,5 +1,5 @@
 {
-  "name": "f.lal.vn-google-style-full",
+  "name": "f.lal.vn-modular-auth",
   "private": true,
   "scripts": {
     "dev": "next dev",
