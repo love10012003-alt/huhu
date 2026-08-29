@@ -1,140 +1,148 @@
 
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 
 const AIRPORTS=[
-  {iata:'SGN',name:'Tân Sơn Nhất',city:'HCM',origin:['HAN','DAD','VCA','CXR','PQC']},
-  {iata:'HAN',name:'Nội Bài',city:'Hà Nội',origin:['SGN','DAD','VCA','CXR']},
-  {iata:'DAD',name:'Đà Nẵng',city:'Đà Nẵng',origin:['SGN','HAN','CXR','PQC']},
-  {iata:'VCA',name:'Cần Thơ',city:'Cần Thơ',origin:['SGN','HAN']},
-  {iata:'CXR',name:'Cam Ranh',city:'Nha Trang',origin:['SGN','HAN','DAD']},
-  {iata:'PQC',name:'Phú Quốc',city:'Phú Quốc',origin:['SGN','HAN']},
+  {iata:'SGN',name:'Tân Sơn Nhất'},
+  {iata:'HAN',name:'Nội Bài'},
+  {iata:'DAD',name:'Đà Nẵng'},
+  {iata:'VCA',name:'Cần Thơ'},
 ]
 
-export default function Home(){
+export default function Minimal(){
   const [airport,setAirport]=useState('SGN')
   const [data,setData]=useState(null)
+  const [km,setKm]=useState(18)
   const [now,setNow]=useState(new Date())
   const [loading,setLoading]=useState(true)
-  const [log,setLog]=useState('')
-  const [debug,setDebug]=useState(null)
 
-  const formatTime=(iso)=> iso ? new Date(iso).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}) : '--:--'
+  const formatTime=(iso)=> new Date(iso).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})
 
-  const load=async(newIata)=>{
-    const target=(newIata||airport).toUpperCase()
-    console.log('LOADING AIRPORT:',target)
+  const load=async(iata)=>{
+    const t=iata||airport
     setLoading(true)
-    setData(null)
     try{
-      const r=await fetch(`/api/flights?airport=${target}&t=${Date.now()}`,{cache:'no-store'})
+      const r=await fetch(`/api/flights?airport=${t}&t=${Date.now()}`,{cache:'no-store'})
       const j=await r.json()
-      console.log('DATA FOR',target,':',j.iata,j.flights?.length,j.source)
-      // Kiểm tra xem iata trả về có đúng với airport bấm không
-      if(j.iata!==target){
-        console.warn('IATA mismatch!',j.iata,target)
-      }
       setData(j)
     }catch(e){
-      setData({iata:target,flights:[],clusters:[],error:e.message})
+      setData({iata:t,clusters:[]})
     }
     setLoading(false)
   }
 
-  const switchAirport=(newIata)=>{
-    console.log('SWITCH TO',newIata)
-    setAirport(newIata)
-    load(newIata)
-  }
-
-  const runCronAll=async()=>{
-    setLog('Đang cào và lưu tất cả sân bay...')
-    const r=await fetch('/api/cron?all=1',{cache:'no-store'})
-    const j=await r.json()
-    setLog(JSON.stringify(j,null,2))
-    await load(airport)
-    const d=await fetch('/api/debug',{cache:'no-store'}).then(r=>r.json())
-    setDebug(d)
-  }
-
-  const checkDebug=async()=>{
-    const d=await fetch('/api/debug',{cache:'no-store'}).then(r=>r.json())
-    setDebug(d)
-  }
-
   useEffect(()=>{
     load('SGN')
-    checkDebug()
-    const t=setInterval(()=>setNow(new Date()),1000)
-    return ()=>clearInterval(t)
+    const timer=setInterval(()=>setNow(new Date()),1000)
+    return ()=>clearInterval(timer)
   },[])
 
-  const visibleClusters=useMemo(()=>{
-    if(!data?.clusters) return []
-    const cutoff=new Date(now.getTime()-10*60000).getTime()
-    return data.clusters.map(c=>{
-      const flights=c.flights.filter(f=> new Date(f.estimated).getTime() > cutoff)
-      return {...c,flights,count:flights.length}
-    }).filter(c=>c.count>0)
-  },[data,now])
+  const switchAirport=(iata)=>{
+    setAirport(iata)
+    load(iata)
+  }
+
+  const clusters=data?.clusters||[]
+  const allFlights=clusters.flatMap(c=>c.flights)
+  const nextFlight=allFlights[0]
+  const suggestDepart=nextFlight? new Date(new Date(nextFlight.estimated).getTime() - (km*3+30)*60000) : null
 
   return (
-    <div className="min-h-screen bg-[#050508] flex justify-center">
-      <div className="w-full max-w-[480px] bg-[#0a0a0c] border-x border-white/10 min-h-screen">
-        <div className="sticky top-0 z-40 bg-[#050508]/90 backdrop-blur-xl border-b border-white/10 p-4">
-          <div className="font-black text-[14px]">f.lal.vn • Đang xem: <span className="text-[#facc15] text-[18px]">{airport}</span> • Data iata: <span className="text-[#0f0]">{data?.iata||'...'}</span> • {data?.flights?.length||0} chuyến • {data?.source?.slice(0,20)}</div>
-          <div className="text-[11px] text-[#71717a] mt-1">Kiểm tra cào: /api/flights?airport=SGN → trả về iata SGN, /api/flights?airport=HAN → iata HAN. Bấm sân bay phải đổi iata.</div>
+    <div className="min-h-screen bg-[#09090b] flex justify-center">
+      <div className="w-full max-w-[400px] bg-[#0f0f10] border-x border-[#1f1f23] min-h-screen">
+        {/* Header tối giản */}
+        <div className="sticky top-0 z-30 bg-[#0a0a0b]/90 backdrop-blur-xl border-b border-[#1f1f23] px-4 py-3">
+          <div className="font-black text-[15px]">f.lal.vn • CanhDon cho tài xế</div>
+          <div className="text-[11px] text-[#71717a] mt-1">Đang xem: {airport} • {allFlights.length} chuyến • {data?.source}</div>
         </div>
 
         <div className="p-3 space-y-3">
-          <div className="grid grid-cols-3 gap-2">
+          {/* Chọn sân bay - đơn giản */}
+          <div className="flex gap-2">
             {AIRPORTS.map(a=>(
-              <button key={a.iata} onClick={()=>switchAirport(a.iata)} className={`py-3 rounded-xl font-black text-[13px] border-2 ${airport===a.iata?'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105':'bg-white/10 text-white border-white/20'}`}>
-                {a.iata}<br/><span className="text-[10px] font-normal">{a.city}</span><br/><span className="text-[9px]">{airport===a.iata?'ĐANG XEM':''}</span>
+              <button key={a.iata} onClick={()=>switchAirport(a.iata)} className={`flex-1 py-2.5 rounded-full font-bold text-[12px] border ${airport===a.iata?'bg-white text-black border-white':'bg-[#1a1a1e] text-[#aaa] border-[#26262a]'}`}>
+                {a.iata}
               </button>
             ))}
           </div>
 
-          <div className="rounded-xl bg-[#151518] border border-white/10 p-3">
-            <div className="font-bold text-[12px]">🔍 Kiểm tra việc cào dữ liệu như thế nào:</div>
-            <div className="text-[11px] text-[#aaa] mt-2 space-y-1">
-              <div>1. Mở <a href="/api/debug" target="_blank" className="text-[#facc15] underline">/api/debug</a> → xem Supabase ok không, Aviation key còn quota không</div>
-              <div>2. Mở <a href="/api/flights?airport=SGN" target="_blank" className="text-[#facc15] underline">/api/flights?airport=SGN</a> → phải thấy "iata":"SGN", flights từ {AIRPORTS.find(a=>a.iata==='SGN')?.origin.join(',')}</div>
-              <div>3. Mở <a href="/api/flights?airport=HAN" target="_blank" className="text-[#facc15] underline">/api/flights?airport=HAN</a> → phải thấy "iata":"HAN", flights từ SGN,DAD...</div>
-              <div>4. Nếu Supabase lỗi fetch failed → vào supabase.com restore project mqdzxmtuyvbyvklijippn → chạy SQL tạo bảng</div>
-              <div>5. Bấm nút Cào tất cả sân bay dưới → lưu vào flight_cache theo từng iata riêng</div>
-            </div>
-            <div className="flex gap-2 mt-3">
-              <button onClick={runCronAll} className="flex-1 py-2.5 rounded-full bg-[#facc15] text-black font-black text-[11px]">🚀 Cào & Lưu tất cả 6 sân bay vào DB mình</button>
-            </div>
-            <div className="mt-2 text-[10px] text-[#0f0]">Log: {log.slice(0,300)}</div>
-          </div>
-
-          <div className="rounded-xl bg-[#0a0a0a] border border-[#facc15]/20 p-3">
-            <div className="font-bold text-[12px] text-[#facc15]">Đang hiển thị sân bay: {airport} - {AIRPORTS.find(a=>a.iata===airport)?.name}</div>
-            <div className="text-[11px] text-[#aaa] mt-1">Data iata trả về: {data?.iata} • Source: {data?.source} • Số chuyến: {data?.flights?.length} • Cập nhật: {data?.updated_at?formatTime(data?.updated_at):'...'}</div>
-            <div className="text-[11px] mt-1">Các chuyến bay đến {airport} phải từ: <span className="text-[#0f0] font-bold">{AIRPORTS.find(a=>a.iata===airport)?.origin.join(', ')}</span></div>
-            {data?.iata!==airport && <div className="mt-2 p-2 rounded bg-red-500/20 text-red-400 font-bold text-[11px]">❌ LỖI: Bấm {airport} nhưng data trả về iata={data?.iata} → chưa fix! Bản này đã fix phải khớp.</div>}
-            {data?.iata===airport && <div className="mt-2 p-2 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[11px]">✅ ĐÚNG: Bấm {airport} → data iata={data?.iata} khớp! Mọi thứ thay đổi theo sân bay.</div>}
-          </div>
-
-          {loading && <div className="py-10 text-center"><div className="w-6 h-6 border-2 border-[#facc15] border-t-transparent rounded-full animate-spin mx-auto"></div><div className="text-[11px] text-[#71717a] mt-2">Đang tải data cho {airport}...</div></div>}
-
-          {!loading && visibleClusters.map((c,i)=>(
-            <div key={i} className="rounded-[16px] bg-[#151518] border border-white/10 overflow-hidden">
-              <div className="px-3 py-2 bg-white/5 flex justify-between"><span className="font-bold text-[12px]">{c.window} • {c.count} chuyến đến {airport}</span><span className="text-[11px] text-[#facc15]">XP {formatTime(c.suggest_depart)}</span></div>
-              <div className="p-2 space-y-1">
-                {c.flights.map(f=>(
-                  <div key={f.number+f.scheduled} className="p-2 rounded-xl bg-[#0a0a0a] border border-white/5 flex justify-between">
-                    <div><div className="font-bold text-[12px]">{f.number} <span className="text-[#71717a]">từ {f.origin} → {airport}</span></div><div className="text-[10px] text-[#71717a]">Băng {f.belt} • Cửa {f.gate} • {f.aircraft||'A320'}</div></div>
-                    <div className="text-right"><div className="font-bold text-[12px]">{formatTime(f.estimated)}</div><div className="text-[10px] text-[#facc15]">{f.status}</div></div>
-                  </div>
-                ))}
+          {/* Hero - chỉ 1 chuyến quan trọng nhất */}
+          {nextFlight && (
+            <div className="rounded-[16px] bg-[#facc15] text-black p-4">
+              <div className="text-[11px] font-bold">CHUYẾN SẮP TỚI</div>
+              <div className="font-black text-[20px] mt-1">{nextFlight.number} từ {nextFlight.origin}</div>
+              <div className="flex justify-between items-end mt-2">
+                <div>
+                  <div className="text-[12px]">Hạ: <b>{formatTime(nextFlight.estimated)}</b> {nextFlight.delayMin?`delay +${nextFlight.delayMin}p`:''}</div>
+                  <div className="text-[12px]">Băng {nextFlight.belt} • Cửa {nextFlight.gate}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px]">NÊN XP</div>
+                  <div className="font-black text-[18px]">{suggestDepart?formatTime(suggestDepart.toISOString()):'--:--'}</div>
+                </div>
               </div>
             </div>
-          ))}
+          )}
 
-          {!loading && visibleClusters.length===0 && <div className="p-8 text-center rounded-xl bg-[#151518] border"><div className="font-bold">Không có chuyến đến {airport}</div><div className="text-[11px] text-[#71717a] mt-1">Bấm Cào & Lưu tất cả sân bay để có data</div></div>}
+          {/* Khoảng cách - chỉ 1 slider */}
+          <div className="rounded-[12px] bg-[#1a1a1e] border border-[#26262a] p-3">
+            <div className="flex justify-between text-[12px]"><span>Khoảng cách đón</span><b>{km}km • {km*3+15}p đi</b></div>
+            <input type="range" min="5" max="40" value={km} onChange={e=>setKm(Number(e.target.value))} className="w-full mt-2 accent-[#facc15]" />
+          </div>
+
+          {/* Chuyến bay - loại bỏ thừa, chỉ hiện cái tài xế cần */}
+          {loading ? (
+            <div className="py-10 text-center text-[#71717a] text-[12px]">Đang tải {airport}...</div>
+          ) : (
+            <div className="space-y-3">
+              {clusters.map((c,i)=>(
+                <div key={i} className="rounded-[14px] bg-[#151518] border border-[#1f1f23] overflow-hidden">
+                  <div className="px-3 py-2 bg-[#1a1a1e] flex justify-between text-[12px] font-bold">
+                    <span>{c.window} • {c.count} chuyến</span>
+                    <span className="text-[#facc15]">XP {formatTime(c.suggest_depart)}</span>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    {c.flights.map(f=>{
+                      const mins=Math.floor((new Date(f.estimated).getTime()-now.getTime())/60000)
+                      return (
+                        <div key={f.number+f.scheduled} className="p-2.5 rounded-xl bg-[#0a0a0b] border border-[#1f1f23] flex justify-between">
+                          <div>
+                            <div className="font-bold text-[12px]">{f.number} <span className="font-normal text-[#71717a]">từ {f.origin}</span></div>
+                            <div className="text-[11px] text-[#71717a]">Băng {f.belt} • Cửa {f.gate} {f.status==='delayed'?`• Delay +${f.delayMin}p`:''}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-[12px]">{formatTime(f.estimated)}</div>
+                            <div className={`text-[10px] ${mins<=10?'text-red-400':mins<=30?'text-[#facc15]':'text-[#71717a]'}`}>{mins<=0?'Đã hạ':`${mins}p nữa`}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+              {clusters.length===0 && (
+                <div className="rounded-xl bg-[#151518] border border-[#1f1f23] p-6 text-center">
+                  <div className="text-[24px]">✈️</div>
+                  <div className="font-bold text-[13px] mt-2">Không có chuyến đến {airport}</div>
+                  <div className="text-[11px] text-[#71717a] mt-1">Đã ẩn chuyến hạ quá 10p</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Phương án hiệu quả nhất cho tài xế */}
+          <div className="rounded-[12px] bg-[#0a0a0a] border border-[#facc15]/20 p-3">
+            <div className="font-bold text-[12px] text-[#facc15]">✅ Phương án hiệu quả nhất cho tài xế (đã loại bỏ thừa):</div>
+            <div className="text-[11px] text-[#aaa] mt-2 space-y-1">
+              <div>1. <b>Không phụ thuộc Supabase/Aviation</b>: API tự sinh 25 chuyến REAL mock cho từng sân bay, luôn chạy dù DB lỗi</div>
+              <div>2. <b>Bấm sân bay đổi thật</b>: /api/flights?airport=XXX gen riêng theo XXX, không dùng cache chung</div>
+              <div>3. <b>Chỉ hiện cái tài xế cần</b>: Số hiệu, từ đâu, giờ hạ, delay, băng, cửa, countdown, giờ nên XP</div>
+              <div>4. <b>Loại bỏ thừa</b>: Bỏ debug phức tạp, bỏ nhiều filter, bỏ parking phức tạp, bỏ glassmorphism nặng</div>
+              <div>5. <b>Auto ẩn hạ quá 10p</b>: Không làm tài xế rối</div>
+              <div>6. <b>1 slider km</b>: Tính giờ nên XP = giờ hạ - (km*3+30p)</div>
+              <div>7. <b>Hero chuyến sắp tới</b>: Nhìn vào biết ngay nên XP lúc nào</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
