@@ -1,1 +1,1 @@
-import { NextResponse } from 'next/server'; export async function GET(){ return NextResponse.json({ok:true,version:'FINAL-HOBBY-NO-VERCEL-JSON'}) }
+import { NextResponse } from 'next/server'; export async function GET(){ return NextResponse.json({ok:true,domain:'f.lal.vn',best:'seamless'}) }
