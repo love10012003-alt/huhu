@@ -1,6 +1,5 @@
 {
-  "name": "f-lal-pro-max-full-hobby",
-  "version": "14.0-FINAL",
+  "name": "f-lal-check",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,9 +10,6 @@
     "next": "14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "@supabase/supabase-js": "2.45.4",
-    "tailwindcss": "3.4.1",
-    "postcss": "8.4.38",
-    "autoprefixer": "10.4.19"
+    "@supabase/supabase-js": "2.45.4"
   }
 }
