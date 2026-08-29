@@ -1,5 +1,5 @@
 {
-  "name": "f.lal.vn-ui-toi-uu",
+  "name": "f.lal.vn-fix-airport-change",
   "private": true,
   "scripts": {
     "dev": "next dev",
