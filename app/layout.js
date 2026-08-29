@@ -1,1 +1,1 @@
-import './globals.css'; export const metadata={title:'f.lal.vn Detailed'}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
+import './globals.css'; export const metadata={title:'f.lal.vn Mobile Visual',viewport:{width:'device-width',initialScale:1,maximumScale:1}}; export default function RootLayout({children}){return <html lang='vi'><body>{children}</body></html>}
