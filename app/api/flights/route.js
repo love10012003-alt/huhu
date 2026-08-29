@@ -7,9 +7,8 @@ export async function GET(req){
   const airport=searchParams.get('airport')||'SGN'
   const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL
   const key=process.env.SUPABASE_SECRET_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if(!url||!key) return NextResponse.json({iata:airport,flights:[],clusters:[],is_mock:true,error:'Missing env'})
   const supabase=createClient(url,key)
-  const {data}=await supabase.from('flight_cache').select('*').eq('iata',airport).single()
-  if(data?.data) return NextResponse.json(data.data)
-  return NextResponse.json({iata:airport,flights:[],clusters:[],is_mock:true,updated_at:new Date().toISOString()})
+  const {data,error}=await supabase.from('flight_cache').select('*').eq('iata',airport).single()
+  if(error) return NextResponse.json({iata:airport,domain:'f.lal.vn',flights:[],clusters:[],is_mock:true,error:error.message})
+  return NextResponse.json(data.data)
 }
