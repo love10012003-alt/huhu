@@ -33,7 +33,19 @@ function calcPrice(km:number, p:any){
 
 function formatVND(n:number){ return Math.round(n/1000)*1000 }
 
+import { createClient } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 export default function Page(){
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  useEffect(()=>{
+    const supabase = createClient()
+    supabase.auth.getUser().then(({data})=>{
+      if(!data.user){ /* cho xem demo nhung lock PRO */ }
+      setUser(data.user)
+    })
+  },[])
+
   const [airport, setAirport] = useState('VCA')
   const [flights, setFlights] = useState<Flight[]>([])
   const [groups, setGroups] = useState<Flight[][]>([])

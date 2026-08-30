@@ -1,31 +1,51 @@
-# t.lal.vn - CanhDon PRO New Style
+# t.lal.vn PRO + Auth Email/Phone
 
-Style mới đen nhám #09090b + gold bo 20px, mobile-first, giống Can Tho PRO.
+## Tính năng mới: Đăng ký thành viên xác minh
 
-## Deploy lên t.lal.vn
+### 1. Cấu hình Supabase Auth
 
-1. Vào Supabase SQL Editor:
+Vào Supabase Dashboard > Authentication > Settings:
+
+**Email:**
+- Enable Email confirmations: ON
+- Site URL: https://t.lal.vn
+- Redirect URLs: https://t.lal.vn/auth/callback
+
+**Phone (tùy chọn, cần Twilio):**
+- Enable Phone confirmations: ON
+- Twilio Account SID, Auth Token, Phone Number
+- Nếu chưa có Twilio, test với OTP 123456 trong local (Supabase cho phép test OTP)
+
+**Tạo bảng profiles:**
 ```sql
-create table if not exists flight_cache (iata text primary key, data jsonb, updated_at timestamptz default now());
-alter table flight_cache disable row level security;
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  phone text,
+  created_at timestamptz default now()
+);
+alter table public.profiles enable row level security;
+create policy "public read" on profiles for select using (true);
+create policy "users update own" on profiles for update using (auth.uid()=id);
+create policy "users insert own" on profiles for insert with check (auth.uid()=id);
 ```
 
-2. Vercel env:
-SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, AVIATIONSTACK_KEY
+### 2. Deploy
 
-3. Up code:
-- Clone repo may-bay
-- Copy toàn bộ file trong zip này đè lên
-- git add . && git commit -m "new style pro" && git push
-- Vercel tự build
+- Thêm env vào Vercel:
+NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, AVIATIONSTACK_KEY
 
-4. Cron:
-Vào https://t.lal.vn/api/cron -> check ok:true
-Vào /api/flights?airport=VCA -> thấy 14 chuyến thật
+- Up code zip này lên repo may-bay
 
-## Tính năng
-- 6 sân bay SGN/VCA/HAN/DAD/CXR/PQC
-- Nhóm ≤60 phút
-- CRM mini, tính lãi, Grab vs Xanh SM, Zalo, bãi đỗ, dẫn đường, voice, xuất Excel
+### 3. Luồng user
 
-Build: Next 14.2.35
+- /auth : chọn Email hoặc SĐT
+- Email: Nhập tên, email, pass -> Supabase gửi link xác minh -> bấm link -> vào /
+- Phone: Nhập SĐT +84 912... -> nhận OTP 6 số -> nhập OTP -> vào /
+- Sau khi login, CRM, tính lãi, xuất Excel mở khóa
+
+### 4. Test nhanh không cần SMS
+
+Trong Supabase > Auth > Users > Add user > nhập phone + auto confirm = true để test
+
+Hoặc dùng email magic link: thay signUp bằng signInWithOtp({email})

@@ -1,6 +1,6 @@
 {
-  "name": "t-lal-vn-pro-new-style",
-  "version": "3.0.0",
+  "name": "t-lal-vn-auth-pro",
+  "version": "3.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,8 @@
     "next": "14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "@supabase/supabase-js": "^2.45.4"
+    "@supabase/supabase-js": "^2.45.4",
+    "@supabase/ssr": "^0.4.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
